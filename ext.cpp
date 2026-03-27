@@ -1,120 +1,123 @@
 #include <iostream>
-#include <queue>
-#include <vector>
-#include <cmath>
 using namespace std;
-
-class MedianFinder {
-private:
-    priority_queue<int> maxHeap;
-    priority_queue<int, vector<int>, greater<int>> minHeap;
-
+#define MAX 100
+class MaxHeap
+{
 public:
-    MedianFinder() {}
-
-    
-    void addNum(int num) {
-        if (maxHeap.empty() || num <= maxHeap.top()) {
-            maxHeap.push(num);
-        } else {
-            // Otherwise add to minHeap
-            minHeap.push(num);
-        }
-
-        if (maxHeap.size() > minHeap.size() + 1) {
-            // Move top element from maxHeap to minHeap
-            int top = maxHeap.top();
-            maxHeap.pop();
-            minHeap.push(top);
-        }
-
-        if (minHeap.size() > maxHeap.size()) {
-            int top = minHeap.top();
-            minHeap.pop();
-            maxHeap.push(top);
+    int arr[MAX], size = 0;
+    void insert(int val)
+    {
+        int i = size++;
+        arr[i] = val;
+        while (i > 0 && arr[(i - 1) / 2] < arr[i])
+        {
+            swap(arr[i], arr[(i - 1) / 2]);
+            i = (i - 1) / 2;
         }
     }
-
-    double findMedian() {
-        if (maxHeap.empty() && minHeap.empty()) {
-            return 0.0;
-        }
-
-        if (maxHeap.size() > minHeap.size()) {
-            return (double)maxHeap.top();
-        }
-        else {
-            return (maxHeap.top() + minHeap.top()) / 2.0;
-        }
+    int top()
+    {
+        return arr[0];
     }
-
-    void displayHeapStatus() {
-        cout << "\nMax Heap (Lower Half) size: " << maxHeap.size();
-        cout << "\nMin Heap (Upper Half) size: " << minHeap.size() << endl;
+    void deleteRoot()
+    {
+        arr[0] = arr[--size];
+        heapify(0);
     }
-
-    int getCount() {
-        return maxHeap.size() + minHeap.size();
+    void heapify(int i)
+    {
+        int largest = i;
+        int l = 2 * i + 1, r = 2 * i + 2;
+        if (l < size && arr[l] > arr[largest])
+            largest = l;
+        if (r < size && arr[r] > arr[largest])
+            largest = r;
+        if (largest != i)
+        {
+            swap(arr[i], arr[largest]);
+            heapify(largest);
+        }
     }
 };
-
-int main() {
-    cout << "========================================" << endl;
-    cout << "   MEDIAN FINDER - Stream Processing   " << endl;
-    cout << "   Using Max Heap & Min Heap            " << endl;
-    cout << "========================================\n" << endl;
-
-    MedianFinder mf;
-    vector<int> numbers = {5, 15, 1, 3, 8, 7, 9, 10, 20, 12};
-
-    cout << "Processing stream of numbers: ";
-    for (int num : numbers) {
-        cout << num << " ";
-    }
-    cout << "\n\n" << endl;
-
-    for (int num : numbers) {
-        mf.addNum(num);
-
-        cout << "Inserted: " << num;
-        cout << " | Total elements: " << mf.getCount();
-        cout << " | Current Median: " << mf.findMedian();
-        mf.displayHeapStatus();
-        cout << "----------------------------------------" << endl;
-    }
-
-    cout << "\n========================================" << endl;
-    cout << "   TEST CASE 2: Single and Pair Elements" << endl;
-    cout << "========================================\n" << endl;
-
-    MedianFinder mf2;
-    vector<int> test2 = {1, 2, 3, 4, 5};
-
-    for (int num : test2) {
-        mf2.addNum(num);
-        cout << "Added: " << num << " -> Median: " << mf2.findMedian() << endl;
-    }
-
-    cout << "\n========================================" << endl;
-    cout << "   INTERACTIVE MODE                    " << endl;
-    cout << "========================================\n" << endl;
-
-    MedianFinder mf3;
-    int choice;
-
-    cout << "Enter numbers to the stream (enter -1 to stop):" << endl;
-    while (true) {
-        cout << "\nEnter a number: ";
-        cin >> choice;
-
-        if (choice == -1) {
-            break;
+class MinHeap
+{
+public:
+    int arr[MAX], size = 0;
+    void insert(int val)
+    {
+        int i = size++;
+        arr[i] = val;
+        while (i > 0 && arr[(i - 1) / 2] > arr[i])
+        {
+            swap(arr[i], arr[(i - 1) / 2]);
+            i = (i - 1) / 2;
         }
-
-        mf3.addNum(choice);
-        cout << "Median after insertion: " << mf3.findMedian();
-        mf3.displayHeapStatus();
     }
+    int top() { return arr[0]; }
+    void deleteRoot()
+    {
+        arr[0] = arr[--size];
+        heapify(0);
+    }
+    void heapify(int i)
+    {
+        int smallest = i;
+        int l = 2 * i + 1, r = 2 * i + 2;
+        if (l < size && arr[l] < arr[smallest])
+            smallest = l;
+        if (r < size && arr[r] < arr[smallest])
+            smallest = r;
+        if (smallest != i)
+        {
+            swap(arr[i], arr[smallest]);
+            heapify(smallest);
+        }
+    }
+};
+class MedianSystem
+{
+    MaxHeap maxH;
+    MinHeap minH;
 
+public:
+    void insert(int x)
+    {
+        if (maxH.size == 0 || x <= maxH.top())
+            maxH.insert(x);
+        else
+            minH.insert(x);
+
+        if (maxH.size > minH.size + 1)
+        {
+            minH.insert(maxH.top());
+            maxH.deleteRoot();
+        }
+        else if (minH.size > maxH.size)
+        {
+            maxH.insert(minH.top());
+            minH.deleteRoot();
+        }
+    }
+    void findMedian()
+    {
+        if (maxH.size == minH.size)
+            cout << "Median = " << (maxH.top() + minH.top()) / 2.0 << endl;
+        else
+            cout << "Median = " << maxH.top() << endl;
+    }
+};
+int main()
+{
+    MedianSystem m;
+    int n, x;
+    cout << "Enter number of elements: ";
+    cin >> n;
+    for (int i = 0; i < n; i++)
+    {
+        cout << "Enter number: ";
+        cin >> x;
+        m.insert(x);
+        m.findMedian();
+    }
     return 0;
 }
