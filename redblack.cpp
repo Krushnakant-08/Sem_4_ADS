@@ -1,192 +1,371 @@
-// Implement the scenario of a file system which maintains directory structure using the Red-Black Tree. 
-// Each node in the tree represents a directory, and the tree is balanced to ensure efficient insertion, deletion, and display operations when navigating through the file system.
 #include <iostream>
+#include <string>
 using namespace std;
 
 enum Color { RED, BLACK };
 
-struct Node {
+struct Dir {
     string name;
     Color color;
-    Node *left, *right, *parent;
-
-    Node(string name){
-        this->name = name;
-        this->color = RED;
-        this->left = nullptr;
-        this->right = nullptr;
-        this->parent = nullptr;
-    }
+    Dir* left;
+    Dir* right;
+    Dir* rbParent;
+    Dir* parentDir;
+    Dir* childrenRoot;
 };
 
-class RedBlackTree {
-private:
-    Node *root;
+Dir* NIL;
+Dir* rootDir;
+Dir* currentDir;
 
-    void rotateLeft(Node *&pt) {
-        Node *pt_y = pt->right;
-        pt->right = pt_y->left;
-        if (pt->right != nullptr)
-            pt->right->parent = pt;
+Dir* newDirNode(const string& name, Dir* parentDir) {
+    Dir* node = new Dir;
+    node->name = name;
+    node->color = RED;
+    node->left = NIL;
+    node->right = NIL;
+    node->rbParent = NIL;
+    node->parentDir = parentDir;
+    node->childrenRoot = NIL;
+    return node;
+}
 
-        pt_y->parent = pt->parent;
+void leftRotate(Dir*& treeRoot, Dir* x) {
+    Dir* y = x->right;
+    x->right = y->left;
+    if (y->left != NIL) y->left->rbParent = x;
 
-        if (pt->parent == nullptr)
-            root = pt_y;
-        else if (pt == pt->parent->left)
-            pt->parent->left = pt_y;
-        else
-            pt->parent->right = pt_y;
+    y->rbParent = x->rbParent;
+    if (x->rbParent == NIL) treeRoot = y;
+    else if (x == x->rbParent->left) x->rbParent->left = y;
+    else x->rbParent->right = y;
 
-        pt_y->left = pt;
-        pt->parent = pt_y;
-    }
+    y->left = x;
+    x->rbParent = y;
+}
 
-    void rotateRight(Node *&pt) {
-        Node *pt_y = pt->left;
-        pt->left = pt_y->right;
-        if (pt->left != nullptr)
-            pt->left->parent = pt;
+void rightRotate(Dir*& treeRoot, Dir* x) {
+    Dir* y = x->left;
+    x->left = y->right;
+    if (y->right != NIL) y->right->rbParent = x;
 
-        pt_y->parent = pt->parent;
+    y->rbParent = x->rbParent;
+    if (x->rbParent == NIL) treeRoot = y;
+    else if (x == x->rbParent->right) x->rbParent->right = y;
+    else x->rbParent->left = y;
 
-        if (pt->parent == nullptr)
-            root = pt_y;
-        else if (pt == pt->parent->left)
-            pt->parent->left = pt_y;
-        else
-            pt->parent->right = pt_y;
+    y->right = x;
+    x->rbParent = y;
+}
 
-        pt_y->right = pt;
-        pt->parent = pt_y;
-    }
-
-    void fixViolation(Node *&pt) {
-        Node *parent_pt = nullptr;
-        Node *grandparent_pt = nullptr;
-
-        while ((pt != root) && (pt->color == RED) && (pt->parent->color == RED)) {
-            parent_pt = pt->parent;
-            grandparent_pt = parent_pt->parent;
-
-            // Case A: Parent of PT is left child of grandparent_pt
-            if (parent_pt == grandparent_pt->left) {
-                Node *uncle_pt = grandparent_pt->right;
-
-                // Case 1: The uncle of PT is also red, only recoloring is required
-                if (uncle_pt != nullptr && uncle_pt->color == RED) {
-                    grandparent_pt->color = RED;
-                    parent_pt->color = BLACK;
-                    uncle_pt->color = BLACK;
-                    pt = grandparent_pt;
-                } else { // Case 2 and Case 3: Uncle is black
-                    if (pt == parent_pt->right) {
-                        rotateLeft(parent_pt);
-                        swap(pt, parent_pt);
-                    }
-                    rotateRight(grandparent_pt);
-                    swap(parent_pt->color, grandparent_pt->color);
-                    pt = parent_pt;
+void fixInsert(Dir*& treeRoot, Dir* z) {
+    while (z->rbParent->color == RED) {
+        if (z->rbParent == z->rbParent->rbParent->left) {
+            Dir* y = z->rbParent->rbParent->right;
+            if (y->color == RED) {
+                z->rbParent->color = BLACK;
+                y->color = BLACK;
+                z->rbParent->rbParent->color = RED;
+                z = z->rbParent->rbParent;
+            } else {
+                if (z == z->rbParent->right) {
+                    z = z->rbParent;
+                    leftRotate(treeRoot, z);
                 }
-            } else { // Case B: Parent of PT is right child of grandparent_pt
-                Node *uncle_pt = grandparent_pt->left;
-
-                // Case 1: The uncle of PT is also red, only recoloring is required
-                if ((uncle_pt != nullptr) && (uncle_pt->color == RED)) {
-                    grandparent_pt->color = RED;
-                    parent_pt->color = BLACK;
-                    uncle_pt->color = BLACK;
-                    pt = grandparent_pt;
-                } else { // Case 2 and Case 3: Uncle is black
-                    if (pt == parent_pt->left) {
-                        rotateRight(parent_pt);
-                        swap(pt, parent_pt);
-                    }
-                    rotateLeft(grandparent_pt);
-                    swap(parent_pt->color, grandparent_pt->color);
-                    pt = parent_pt;
+                z->rbParent->color = BLACK;
+                z->rbParent->rbParent->color = RED;
+                rightRotate(treeRoot, z->rbParent->rbParent);
+            }
+        } else {
+            Dir* y = z->rbParent->rbParent->left;
+            if (y->color == RED) {
+                z->rbParent->color = BLACK;
+                y->color = BLACK;
+                z->rbParent->rbParent->color = RED;
+                z = z->rbParent->rbParent;
+            } else {
+                if (z == z->rbParent->left) {
+                    z = z->rbParent;
+                    rightRotate(treeRoot, z);
                 }
+                z->rbParent->color = BLACK;
+                z->rbParent->rbParent->color = RED;
+                leftRotate(treeRoot, z->rbParent->rbParent);
             }
         }
-        root->color = BLACK;
     }
+    treeRoot->color = BLACK;
+}
 
-public:
-    RedBlackTree() { root = nullptr; }
-
-    void insert(const string &name) {
-        Node *pt = new Node(name);
-        root = BSTInsert(root, pt);
-        fixViolation(pt);
+Dir* searchDir(Dir* treeRoot, const string& name) {
+    Dir* cur = treeRoot;
+    while (cur != NIL) {
+        if (name < cur->name) cur = cur->left;
+        else if (name > cur->name) cur = cur->right;
+        else return cur;
     }
+    return NIL;
+}
 
-    Node* BSTInsert(Node* &root, Node* &pt) {
-        if (root == nullptr)
-            return pt;
+bool insertDir(Dir*& treeRoot, const string& name, Dir* parentDir) {
+    Dir* z = newDirNode(name, parentDir);
+    Dir* y = NIL;
+    Dir* x = treeRoot;
 
-        if (pt->name < root->name) {
-            root->left = BSTInsert(root->left, pt);
-            root->left->parent = root;
-        } else if (pt->name > root->name) {
-            root->right = BSTInsert(root->right, pt);
-            root->right->parent = root;
+    while (x != NIL) {
+        y = x;
+        if (z->name < x->name) x = x->left;
+        else if (z->name > x->name) x = x->right;
+        else {
+            delete z;
+            return false;
         }
-
-        return root;
     }
 
-    void inorder(Node *root) {
-        if (root == nullptr)
-            return;
+    z->rbParent = y;
+    if (y == NIL) treeRoot = z;
+    else if (z->name < y->name) y->left = z;
+    else y->right = z;
 
-        inorder(root->left);
-        cout << root->name << " ";
-        inorder(root->right);
+    fixInsert(treeRoot, z);
+    return true;
+}
+
+Dir* minimum(Dir* node) {
+    while (node->left != NIL) node = node->left;
+    return node;
+}
+
+void transplant(Dir*& treeRoot, Dir* u, Dir* v) {
+    if (u->rbParent == NIL) treeRoot = v;
+    else if (u == u->rbParent->left) u->rbParent->left = v;
+    else u->rbParent->right = v;
+    v->rbParent = u->rbParent;
+}
+
+void fixDelete(Dir*& treeRoot, Dir* x) {
+    while (x != treeRoot && x->color == BLACK) {
+        if (x == x->rbParent->left) {
+            Dir* w = x->rbParent->right;
+            if (w->color == RED) {
+                w->color = BLACK;
+                x->rbParent->color = RED;
+                leftRotate(treeRoot, x->rbParent);
+                w = x->rbParent->right;
+            }
+            if (w->left->color == BLACK && w->right->color == BLACK) {
+                w->color = RED;
+                x = x->rbParent;
+            } else {
+                if (w->right->color == BLACK) {
+                    w->left->color = BLACK;
+                    w->color = RED;
+                    rightRotate(treeRoot, w);
+                    w = x->rbParent->right;
+                }
+                w->color = x->rbParent->color;
+                x->rbParent->color = BLACK;
+                w->right->color = BLACK;
+                leftRotate(treeRoot, x->rbParent);
+                x = treeRoot;
+            }
+        } else {
+            Dir* w = x->rbParent->left;
+            if (w->color == RED) {
+                w->color = BLACK;
+                x->rbParent->color = RED;
+                rightRotate(treeRoot, x->rbParent);
+                w = x->rbParent->left;
+            }
+            if (w->left->color == BLACK && w->right->color == BLACK) {
+                w->color = RED;
+                x = x->rbParent;
+            } else {
+                if (w->left->color == BLACK) {
+                    w->right->color = BLACK;
+                    w->color = RED;
+                    leftRotate(treeRoot, w);
+                    w = x->rbParent->left;
+                }
+                w->color = x->rbParent->color;
+                x->rbParent->color = BLACK;
+                w->left->color = BLACK;
+                rightRotate(treeRoot, x->rbParent);
+                x = treeRoot;
+            }
+        }
+    }
+    x->color = BLACK;
+}
+
+bool deleteDir(Dir*& treeRoot, const string& name) {
+    Dir* z = searchDir(treeRoot, name);
+    if (z == NIL) return false;
+    if (z->childrenRoot != NIL) return false;
+
+    Dir* y = z;
+    Dir* x = NIL;
+    Color yOriginalColor = y->color;
+
+    if (z->left == NIL) {
+        x = z->right;
+        transplant(treeRoot, z, z->right);
+    } else if (z->right == NIL) {
+        x = z->left;
+        transplant(treeRoot, z, z->left);
+    } else {
+        y = minimum(z->right);
+        yOriginalColor = y->color;
+        x = y->right;
+        if (y->rbParent == z) {
+            x->rbParent = y;
+        } else {
+            transplant(treeRoot, y, y->right);
+            y->right = z->right;
+            y->right->rbParent = y;
+        }
+        transplant(treeRoot, z, y);
+        y->left = z->left;
+        y->left->rbParent = y;
+        y->color = z->color;
     }
 
-    void preorder(Node *root) {
-        if (root == nullptr)
-            return;
+    delete z;
+    if (yOriginalColor == BLACK) fixDelete(treeRoot, x);
+    return true;
+}
 
-        cout << root->name << " ";
-        preorder(root->left);
-        preorder(root->right);
+void inorderList(Dir* treeRoot) {
+    if (treeRoot == NIL) return;
+    inorderList(treeRoot->left);
+    cout << treeRoot->name << " ";
+    inorderList(treeRoot->right);
+}
+
+void printIndent(int depth) {
+    for (int i = 0; i < depth; i++) cout << "  ";
+}
+
+void showTree(Dir* treeRoot, int depth);
+
+void showDirectory(Dir* dir, int depth) {
+    printIndent(depth);
+    cout << dir->name << endl;
+    showTree(dir->childrenRoot, depth + 1);
+}
+
+void showTree(Dir* treeRoot, int depth) {
+    if (treeRoot == NIL) return;
+    showTree(treeRoot->left, depth);
+    showDirectory(treeRoot, depth);
+    showTree(treeRoot->right, depth);
+}
+
+bool mkdirCmd(const string& name) {
+    if (name.empty()) return false;
+    return insertDir(currentDir->childrenRoot, name, currentDir);
+}
+
+bool rmdirCmd(const string& name) {
+    return deleteDir(currentDir->childrenRoot, name);
+}
+
+bool cdCmd(const string& name) {
+    if (name == "/") {
+        currentDir = rootDir;
+        return true;
     }
-
-    void postorder(Node *root) {
-        if (root == nullptr)
-            return;
-
-        postorder(root->left);
-        postorder(root->right);
-        cout << root->name << " ";
+    if (name == "..") {
+        if (currentDir->parentDir != nullptr) currentDir = currentDir->parentDir;
+        return true;
     }
+    Dir* next = searchDir(currentDir->childrenRoot, name);
+    if (next == NIL) return false;
+    currentDir = next;
+    return true;
+}
 
-    void display() {
-        cout << "Directory Structure (Inorder Traversal): ";
-        inorder(root);
-        cout << endl;
-
-        cout << "Directory Structure (Preorder Traversal): ";
-        preorder(root);
-        cout << endl;
-
-        cout << "Directory Structure (Postorder Traversal): ";
-        postorder(root);
-        cout << endl;
+void lsCmd() {
+    if (currentDir->childrenRoot == NIL) {
+        cout << "(empty)" << endl;
+        return;
     }
-};
+    inorderList(currentDir->childrenRoot);
+    cout << endl;
+}
+
+void pwdCmd() {
+    string path = "";
+    Dir* temp = currentDir;
+    while (temp != nullptr) {
+        path = "/" + temp->name + path;
+        temp = temp->parentDir;
+    }
+    cout << path << endl;
+}
+
+void clearAll(Dir* treeRoot) {
+    if (treeRoot == NIL) return;
+    clearAll(treeRoot->left);
+    clearAll(treeRoot->right);
+    clearAll(treeRoot->childrenRoot);
+    delete treeRoot;
+}
 
 int main() {
-    RedBlackTree rbt;
-    rbt.insert("root");
-    rbt.insert("home");
-    rbt.insert("user");
-    rbt.insert("documents");
-    rbt.insert("pictures");
-    rbt.insert("music");
+    NIL = new Dir;
+    NIL->name = "";
+    NIL->color = BLACK;
+    NIL->left = NIL;
+    NIL->right = NIL;
+    NIL->rbParent = NIL;
+    NIL->parentDir = nullptr;
+    NIL->childrenRoot = NIL;
 
-    rbt.display();
+    rootDir = new Dir;
+    rootDir->name = "root";
+    rootDir->color = BLACK;
+    rootDir->left = NIL;
+    rootDir->right = NIL;
+    rootDir->rbParent = NIL;
+    rootDir->parentDir = nullptr;
+    rootDir->childrenRoot = NIL;
 
+    currentDir = rootDir;
+
+    mkdirCmd("home");
+    mkdirCmd("etc");
+    mkdirCmd("var");
+
+    cdCmd("home");
+    mkdirCmd("user");
+    mkdirCmd("guest");
+
+    cdCmd("user");
+    mkdirCmd("documents");
+    mkdirCmd("pictures");
+    mkdirCmd("music");
+
+    cout << "Current Path: ";
+    pwdCmd();
+    cout << "Current Directory Listing: ";
+    lsCmd();
+
+    cdCmd("/");
+    cout << endl << "Directory Tree:" << endl;
+    showDirectory(rootDir, 0);
+
+    cout << endl << "Delete empty directory /root/etc: ";
+    cout << (rmdirCmd("etc") ? "success" : "failed") << endl;
+
+    cout << "Delete non-empty directory /root/home: ";
+    cout << (rmdirCmd("home") ? "success" : "failed") << endl;
+
+    cout << endl << "Directory Tree:" << endl;
+    showDirectory(rootDir, 0);
+
+    clearAll(rootDir->childrenRoot);
+    delete rootDir;
+    delete NIL;
     return 0;
 }
