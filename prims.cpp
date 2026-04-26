@@ -11,7 +11,7 @@ void primsMST(vector<vector<int>> graph)
     vector<int> key(v, INT_MAX);
     vector<bool> vis(v, false);
 
-    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;  //(weight, node)
 
     key[0] = 0;
     parent[0] = -1;

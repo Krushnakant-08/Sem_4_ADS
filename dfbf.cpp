@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+#include <stack>
 using namespace std;
 
 vector<vector<int>> GRAPH;
@@ -8,14 +9,26 @@ vector<bool> visited;
 
 void DFS(int current)
 {
-    visited[current] = true;
-    cout << "Current on (DFS): " << current << endl;
+    stack<int> st;
+    st.push(current);
 
-    for (int i = 0; i < (int)GRAPH.size(); ++i)
+    while (!st.empty())
     {
-        if (GRAPH[current][i] == 1 && !visited[i])
+        int start = st.top();
+        st.pop();
+
+        if (!visited[start])
         {
-            DFS(i);
+            visited[start] = true;
+            cout << "Current on (DFS): " << start << endl;
+        }
+
+        for (int i = 0; i < GRAPH.size(); i++)
+        {
+            if (GRAPH[start][i] == 1 && !visited[i])
+            {
+                st.push(i);
+            }
         }
     }
 }
@@ -47,12 +60,11 @@ void BFS(int start)
 int main()
 {
     GRAPH = {
-        {1, 0, 1, 1, 1},
-        {1, 0, 1, 0, 1},
+        {0, 0, 1, 1, 1},
+        {0, 0, 1, 0, 1},
         {1, 1, 1, 0, 1},
-        {0, 0, 0, 0, 1},
-        {1, 1, 1, 1, 1}
-    };
+        {1, 0, 1, 0, 1},
+        {1, 1, 1, 1, 1}};
 
     int numNodes = (int)GRAPH.size();
     visited.assign(numNodes, false);
@@ -62,7 +74,8 @@ int main()
     DFS(startNode);
 
     visited.assign(numNodes, false);
-    cout << endl << endl;
+    cout << endl
+         << endl;
 
     cout << "Starting maze and finding min path using BFS from node " << startNode << endl;
     BFS(startNode);

@@ -21,7 +21,7 @@ bool dfs(int src, int des, vector<vector<int>> &adj, vector<bool> &vis){
 int main(){
     int v = 5;
 
-    vector<Edge> edges = {
+    vector<Edge> edges = { //(u, v, w)
         {0, 1, 2},
         {0, 3, 6},
         {1, 2, 3},
